@@ -9,5 +9,5 @@ export async function GET() {
   if (!ctx) return NextResponse.json({ ok: false, error: "no session" }, { status: 401 });
   if (ctx.actor.role === "client") return NextResponse.json({ ok: false, error: "staff only" }, { status: 403 });
   const readiness = await filingReadiness(ctx.db, ctx);
-  return NextResponse.json(makeRedactor(ctx.packet.packet).deep({ ok: true, revision: ctx.workspace.revision, workflowState: ctx.workspace.workflowState, ...readiness }));
+  return NextResponse.json(makeRedactor(ctx.packet.packet).deep({ ...readiness, ready: readiness.ok, revision: ctx.workspace.revision, workflowState: ctx.workspace.workflowState }));
 }
