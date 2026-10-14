@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SensitiveValue } from "@/components/sensitive-value";
 import { dateTime } from "@/lib/format";
 import { loadFirm, type FirmView } from "@/server/queries/firm";
@@ -169,7 +170,12 @@ export default async function FirmPage() {
       </section>
 
       <Card title={`Standards in force (${firm.standards.version})`}>
-        <p className="text-xs text-stone-500">{firm.standards.note} Editing standards is not yet implemented; these are applied as supplied.</p>
+        <p className="text-xs text-stone-500">
+          {firm.standards.note}{" "}
+          <Link href="/firm/standards" className="text-blue-700 hover:underline">
+            Version history and editing
+          </Link>
+        </p>
         <div className="mt-3 grid gap-6 lg:grid-cols-2">
           <div>
             <h3 className="text-xs font-medium text-stone-500">Rules</h3>
