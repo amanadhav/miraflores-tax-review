@@ -4,6 +4,7 @@ import "./evidence";
 import "./findings";
 import "./signoffs";
 import "./time";
+import "./version";
 import "./judgments";
 import "./requests";
 import "./tasks";
