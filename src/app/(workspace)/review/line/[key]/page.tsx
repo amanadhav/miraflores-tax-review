@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AdjustmentForm } from "@/components/adjustment-form";
 import { AdjustmentHistory } from "@/components/adjustment-history";
 import { FindingList } from "@/components/finding-list";
+import { JudgmentForm } from "@/components/judgment-form";
 import { RefLink } from "@/components/ref-link";
 import { RefBadge, RefList } from "@/components/line-refs";
 import { formatLineValue, LineStatusBadge } from "@/components/line-value";
@@ -293,6 +294,15 @@ export default async function LinePage({ params }: { params: Promise<{ key: stri
           canPropose={v.propose.canPropose}
           actorRole={v.actor.role}
         />
+      </Panel>
+
+      <Panel id="judgment" title="Record a judgment" hint="A judgment call, election, due diligence record or penalty decision on this line, with the authority relied on and its evidence.">
+        <JudgmentForm revision={v.revision} canRecord={v.actor.canVerify} actorRole={v.actor.role} subjectRef={v.key} subjectLabel={v.label} lockSubject evidence={v.evidence.sources} defaultArea={v.area.id} compact />
+        <p className="mt-2 text-xs">
+          <Link href="/review/judgments" className="text-blue-700 hover:underline">
+            All judgments and the packet&apos;s open judgment items
+          </Link>
+        </p>
       </Panel>
     </div>
   );
