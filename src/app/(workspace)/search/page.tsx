@@ -1,3 +1,4 @@
+import { dateOnly } from "@/lib/format";
 import { redirect } from "next/navigation";
 import { RefLink } from "@/components/ref-link";
 import { SearchBox } from "@/components/search-box";
@@ -42,7 +43,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       <section>
         <h1 className="text-2xl font-semibold tracking-tight">Search</h1>
         <p className="mt-1 text-sm text-stone-600">
-          Matches what you are allowed to see, as it was available on {ctx.workspace.asOf.slice(0, 10)}. Sensitive values stay masked and
+          Matches what you are allowed to see, as it was available on {dateOnly(ctx.workspace.asOf)}. Sensitive values stay masked and
           cannot be searched for.
         </p>
         <SearchBox initialQuery={result?.query ?? ""} autoFocus className="mt-3 flex items-center gap-2" />

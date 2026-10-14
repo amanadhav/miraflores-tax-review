@@ -372,6 +372,6 @@ export async function search(ctx: SessionContext, q: string, options: SearchOpti
     more,
     internal: true,
     refused: false,
-    message: hits.length === 0 ? `Nothing matched "${query}" in evidence available at ${asOf.slice(0, 10)}.` : null,
+    message: hits.length === 0 ? `Nothing matched "${query}" in evidence available at ${new Date(asOf).toISOString().slice(0, 10)}.` : null,
   };
 }
