@@ -54,3 +54,5 @@ AGENTS.md
 
 # editor and agent settings
 /.claude/
+
+.vercel
