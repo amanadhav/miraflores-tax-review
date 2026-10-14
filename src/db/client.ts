@@ -1,3 +1,4 @@
+import { mkdirSync } from "node:fs";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import * as schema from "./schema";
 
@@ -50,6 +51,7 @@ export async function openDb(options: OpenOptions = {}): Promise<DbHandle> {
   const { drizzle } = await import("drizzle-orm/pglite");
   const { migrate } = await import("drizzle-orm/pglite/migrator");
   const dir = options.pgliteDir ?? process.env.PGLITE_DIR?.trim() ?? ".data/pglite";
+  if (dir !== "memory") mkdirSync(dir, { recursive: true });
   const client = dir === "memory" ? new PGlite() : new PGlite(dir);
   const db = drizzle(client, { schema });
   return {

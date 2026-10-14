@@ -1,5 +1,5 @@
 {
-  "id": "a1a22621-4e50-4db8-af7e-4ce756c51afd",
+  "id": "cfccd1e3-ffa8-4268-a8f2-4d3e20f5cd2c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -107,6 +107,18 @@
         },
         "effect_california": {
           "name": "effect_california",
+          "type": "numeric(16, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "balance_federal": {
+          "name": "balance_federal",
+          "type": "numeric(16, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "balance_california": {
+          "name": "balance_california",
           "type": "numeric(16, 2)",
           "primaryKey": false,
           "notNull": false

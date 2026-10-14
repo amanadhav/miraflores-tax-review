@@ -233,6 +233,8 @@ export const adjustments = pgTable(
     caSource: boolean("ca_source").notNull().default(false),
     effectFederal: numeric("effect_federal", { precision: 16, scale: 2 }),
     effectCalifornia: numeric("effect_california", { precision: 16, scale: 2 }),
+    balanceFederal: numeric("balance_federal", { precision: 16, scale: 2 }),
+    balanceCalifornia: numeric("balance_california", { precision: 16, scale: 2 }),
     effectStatus: text("effect_status").notNull(), // estimated | exact_local | none | unknown
     effectBasis: text("effect_basis"),
     limitations: jsonb("limitations").$type<string[]>().notNull(),

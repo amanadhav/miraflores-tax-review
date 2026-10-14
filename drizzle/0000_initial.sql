@@ -16,6 +16,8 @@ CREATE TABLE "adjustments" (
 	"ca_source" boolean DEFAULT false NOT NULL,
 	"effect_federal" numeric(16, 2),
 	"effect_california" numeric(16, 2),
+	"balance_federal" numeric(16, 2),
+	"balance_california" numeric(16, 2),
 	"effect_status" text NOT NULL,
 	"effect_basis" text,
 	"limitations" jsonb NOT NULL,

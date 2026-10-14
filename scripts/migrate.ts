@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./env";
 import { openDb } from "../src/db/client";
 
 async function main() {
