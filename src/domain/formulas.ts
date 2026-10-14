@@ -54,7 +54,7 @@ export function inferFormula(
   }
 
   if (rule === "R-SUM" || rule === "R-CARRY") {
-    if (vals.length > 10) return { kind: "opaque", rule, reason: "Too many inputs to verify sign combinations." };
+    if (vals.length > 16) return { kind: "opaque", rule, reason: "Too many inputs to verify sign combinations." };
     const matches: (1 | -1)[][] = [];
     const n = vals.length;
     for (let mask = 0; mask < 1 << n; mask++) {

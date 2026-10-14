@@ -12,7 +12,7 @@ import { CommandError, registerHandler, type HandlerContext } from "../commands"
 import { newId } from "../ids";
 import { loadEffective, recordContribution, scopePreparers } from "../state";
 
-const SCHC_EXPENSE = /^SchC\.(8|9|1\d|2\d[a-z]?(\.\d+)?|30)$/;
+const SCHC_EXPENSE = /^SchC\.(8|9|1\d|2[0-7][a-z]?(\.\d+)?|30)$/;
 
 /** Reject evidence that does not resolve or is not yet available at the replay clock. */
 export function assertEvidence(hc: HandlerContext, refs: string[]): void {
