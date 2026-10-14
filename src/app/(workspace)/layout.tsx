@@ -4,6 +4,7 @@ import { dateOnly } from "@/lib/format";
 import { requireSessionContext } from "@/server/request";
 import { LiveRefresh } from "@/components/live-refresh";
 import { RoleSwitcher } from "@/components/role-switcher";
+import { SearchBox } from "@/components/search-box";
 
 const NAV = [
   { href: "/overview", label: "Overview" },
@@ -38,6 +39,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
             ))}
           </nav>
           <div className="ml-auto flex flex-wrap items-center gap-4 text-xs text-stone-500">
+            {ctx.actor.role !== "client" ? <SearchBox className="w-48" /> : null}
             <span title="Share this id to join from another browser">
               Workspace <span className="num font-medium text-stone-700">{ctx.workspace.id}</span>
             </span>
