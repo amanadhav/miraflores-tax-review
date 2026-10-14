@@ -53,6 +53,8 @@ export interface SearchResult {
 }
 
 export const SEARCH_LIMIT = 20;
+export const REFUSED_MESSAGE =
+  "That looks like a full identifier. Searches for SSNs, account numbers and PINs are refused and logged; search by name, label or document instead.";
 const MIN_QUERY = 2;
 const SNIPPET_RADIUS = 90;
 
@@ -236,11 +238,7 @@ export async function search(ctx: SessionContext, q: string, options: SearchOpti
       outcome: "denied",
       reason: `search text looked like a full ${kind.replace(/_/g, " ")}; refused, nothing returned, query not stored`,
     });
-    return empty({
-      query: "",
-      refused: true,
-      message: "That looks like a full identifier. Searches for SSNs, account numbers and PINs are refused and logged; search by name, label or document instead.",
-    });
+    return empty({ query: "", refused: true, message: REFUSED_MESSAGE });
   }
 
   const tokens = tokensOf(query);

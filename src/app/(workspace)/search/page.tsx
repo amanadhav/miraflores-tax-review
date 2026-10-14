@@ -1,6 +1,7 @@
+import { redirect } from "next/navigation";
 import { RefLink } from "@/components/ref-link";
 import { SearchBox } from "@/components/search-box";
-import { search, type SearchHit, type SearchHitType } from "@/server/queries/search";
+import { REFUSED_MESSAGE, search, type SearchHit, type SearchHitType } from "@/server/queries/search";
 import { requireSessionContext } from "@/server/request";
 
 export const dynamic = "force-dynamic";
@@ -19,12 +20,17 @@ const GROUPS: { type: SearchHitType; label: string }[] = [
  * Search results grouped by type. Everything here was redacted and filtered
  * on the server; the page only lays it out and links each hit to its home.
  */
-export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string | string[]; refused?: string }> }) {
   const ctx = await requireSessionContext();
   const params = await searchParams;
   const raw = Array.isArray(params.q) ? params.q[0] : params.q;
   const q = (raw ?? "").slice(0, 200);
   const result = q.trim() ? await search(ctx, q) : null;
+  // A refused query is a sensitive value. It has been logged (without the
+  // value); leave the address so the value is not echoed into the page.
+  if (result?.refused) redirect("/search?refused=1");
+  const notice = result?.message ?? (params.refused === "1" ? REFUSED_MESSAGE : null);
+  const refused = Boolean(result?.refused) || (params.refused === "1" && !result);
   const byType = new Map<SearchHitType, SearchHit[]>();
   for (const hit of result?.hits ?? []) {
     const list = byType.get(hit.type);
@@ -42,9 +48,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         <SearchBox initialQuery={result?.query ?? ""} autoFocus className="mt-3 flex items-center gap-2" />
       </section>
 
-      {result?.message ? (
-        <p className={`rounded border p-3 text-sm ${result.refused ? "border-red-200 bg-red-50 text-red-800" : "border-stone-200 bg-white text-stone-600"}`} role="status">
-          {result.message}
+      {notice ? (
+        <p className={`rounded border p-3 text-sm ${refused ? "border-red-200 bg-red-50 text-red-800" : "border-stone-200 bg-white text-stone-600"}`} role="status">
+          {notice}
         </p>
       ) : null}
 
