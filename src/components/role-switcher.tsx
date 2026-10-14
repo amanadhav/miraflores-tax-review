@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 export interface PersonaOption {
   id: string;
@@ -16,9 +16,11 @@ export interface PersonaOption {
  */
 export function RoleSwitcher({ personas, currentId }: { personas: PersonaOption[]; currentId: string }) {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
+  const next = search ? `${pathname}?${search}` : pathname;
   return (
     <form action="/api/session/switch" method="post" className="flex items-center gap-2">
-      <input type="hidden" name="next" value={pathname} />
+      <input type="hidden" name="next" value={next} />
       <label className="text-xs text-stone-500" htmlFor="actorId">
         Acting as
       </label>

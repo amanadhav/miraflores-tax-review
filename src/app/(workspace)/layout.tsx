@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { actorsFromPacket, isAvailableAt } from "@/domain/policy";
 import { dateOnly } from "@/lib/format";
 import { requireSessionContext } from "@/server/request";
@@ -55,7 +56,14 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
               Return <span className="num font-medium text-stone-700">{ctx.workspace.activeVersion}</span>
             </span>
             <LiveRefresh revision={ctx.workspace.revision} />
-            <RoleSwitcher personas={personas} currentId={ctx.actor.id} />
+            <Suspense fallback={null}>
+              <RoleSwitcher personas={personas} currentId={ctx.actor.id} />
+            </Suspense>
+            <form action="/api/session/leave" method="post">
+              <button type="submit" className="text-xs text-stone-500 underline hover:text-stone-800" title="Forget this browser session; the workspace is kept and can be joined again by id">
+                Leave
+              </button>
+            </form>
           </div>
         </div>
       </header>
