@@ -26,7 +26,20 @@ export type ParsedRef =
   | { kind: "workpaper"; table: WorkpaperTable; id: string }
   | { kind: "unknown"; raw: string };
 
-export type WorkpaperTable = "adjustment" | "anchor" | "finding" | "verification" | "signoff" | "request";
+export type WorkpaperTable =
+  | "adjustment"
+  | "anchor"
+  | "finding"
+  | "verification"
+  | "signoff"
+  | "request"
+  | "reply"
+  | "attachment"
+  | "judgment"
+  | "task"
+  | "disposition"
+  | "snapshot"
+  | "submission";
 
 const LINE_KEY = /^([A-Za-z][A-Za-z0-9]*(?:-[A-Z])?)\.(.+)$/;
 
@@ -49,7 +62,7 @@ export function parseRef(raw: string): ParsedRef {
   if ((m = ref.match(/^ref:fx\.SEK\.(.+)$/))) return { kind: "fx", rate: m[1] };
   if ((m = ref.match(/^timeline:(.+)$/))) return { kind: "timeline", id: m[1] };
   if (/^v\d+$/.test(ref)) return { kind: "version", id: ref };
-  if ((m = ref.match(/^(adjustment|anchor|finding|verification|signoff|request):(.+)$/))) {
+  if ((m = ref.match(/^(adjustment|anchor|finding|verification|signoff|request|reply|attachment|judgment|task|disposition|snapshot|submission):(.+)$/))) {
     return { kind: "workpaper", table: m[1] as WorkpaperTable, id: m[2] };
   }
   if ((m = ref.match(LINE_KEY))) return { kind: "line", key: ref, form: m[1] };

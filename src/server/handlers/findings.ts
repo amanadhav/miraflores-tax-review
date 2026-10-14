@@ -26,7 +26,7 @@ registerHandler({
   async handle(hc, p) {
     const { tx, ctx, revision } = hc;
     requirePermission(ctx.actor, "raise_finding", "raise findings");
-    assertEvidence(hc, p.refs);
+    await assertEvidence(hc, p.refs);
     let area = p.area;
     if (!area) {
       const lines = indexPacket(ctx.packet.packet).linesByVersion.get(ctx.workspace.activeVersion)!;
@@ -93,7 +93,7 @@ registerHandler({
     const [f] = await tx.select().from(t.findings).where(and(eq(t.findings.id, p.findingId), eq(t.findings.workspaceId, ctx.workspace.id)));
     if (!f) throw new CommandError("not_found", "Finding not found.");
     if (f.status !== "open") throw new CommandError("invalid_state", `Finding is already ${f.status}.`);
-    assertEvidence(hc, p.evidenceRefs);
+    await assertEvidence(hc, p.evidenceRefs);
     const resolution = p.evidenceRefs.length ? `${p.resolution} [evidence: ${p.evidenceRefs.join(", ")}]` : p.resolution;
     await tx
       .update(t.findings)

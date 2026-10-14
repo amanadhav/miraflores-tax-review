@@ -16,6 +16,7 @@ export type FindingRow = typeof t.findings.$inferSelect;
 export type SignoffRow = typeof t.signoffs.$inferSelect;
 export type VerificationRow = typeof t.verifications.$inferSelect;
 export type AnchorRow = typeof t.anchors.$inferSelect;
+export type JudgmentRow = typeof t.judgments.$inferSelect;
 
 export interface WorkspaceState {
   version: ReturnVersion;
@@ -26,6 +27,7 @@ export interface WorkspaceState {
   signoffs: SignoffRow[];
   verifications: VerificationRow[];
   anchors: AnchorRow[];
+  judgments: JudgmentRow[];
 }
 
 export function activeVersion(ctx: SessionContext): ReturnVersion {
@@ -55,12 +57,13 @@ export async function loadEffective(db: Db, ctx: SessionContext): Promise<Effect
 export async function loadWorkspaceState(db: Db, ctx: SessionContext): Promise<WorkspaceState> {
   const version = activeVersion(ctx);
   const wsId = ctx.workspace.id;
-  const [adjustments, findings, signoffs, verifications, anchors] = await Promise.all([
+  const [adjustments, findings, signoffs, verifications, anchors, judgments] = await Promise.all([
     db.select().from(t.adjustments).where(eq(t.adjustments.workspaceId, wsId)).orderBy(asc(t.adjustments.createdRevision), asc(t.adjustments.createdAt)),
     db.select().from(t.findings).where(eq(t.findings.workspaceId, wsId)).orderBy(asc(t.findings.createdRevision)),
     db.select().from(t.signoffs).where(eq(t.signoffs.workspaceId, wsId)).orderBy(asc(t.signoffs.revision)),
     db.select().from(t.verifications).where(eq(t.verifications.workspaceId, wsId)).orderBy(asc(t.verifications.createdRevision)),
     db.select().from(t.anchors).where(eq(t.anchors.workspaceId, wsId)).orderBy(asc(t.anchors.createdRevision)),
+    db.select().from(t.judgments).where(eq(t.judgments.workspaceId, wsId)).orderBy(asc(t.judgments.createdRevision)),
   ]);
   const accepted = adjustments
     .filter((a) => a.status === "accepted")
@@ -70,7 +73,7 @@ export async function loadWorkspaceState(db: Db, ctx: SessionContext): Promise<W
     ctx.packet.packet.engine_reference.parameters,
     accepted.map((a) => ({ id: a.id, targetRef: a.targetRef, kind: a.kind, proposedValue: a.proposedValue })),
   );
-  return { version, effective, adjustments, accepted, findings, signoffs, verifications, anchors };
+  return { version, effective, adjustments, accepted, findings, signoffs, verifications, anchors, judgments };
 }
 
 /** Line keys that belong to a review area in the active version. */
@@ -82,7 +85,14 @@ export function linesInArea(version: ReturnVersion, areaId: string): string[] {
  * Everyone who prepared any part of a scope, including the engagement's
  * assigned preparer. Used by the no-self-review rule.
  */
-export async function scopePreparers(db: Db, workspaceId: string, scopeType: "area" | "line", scopeId: string): Promise<Set<string>> {
+export async function scopePreparers(db: Db, workspaceId: string, scopeType: "area" | "line" | "return", scopeId: string): Promise<Set<string>> {
+  if (scopeType === "return") {
+    const all = await db
+      .select({ actorId: t.scopeContributions.actorId })
+      .from(t.scopeContributions)
+      .where(eq(t.scopeContributions.workspaceId, workspaceId));
+    return new Set(all.map((r) => r.actorId));
+  }
   const rows = await db
     .select({ actorId: t.scopeContributions.actorId })
     .from(t.scopeContributions)

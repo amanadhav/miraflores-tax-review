@@ -146,6 +146,9 @@ export const workspaces = pgTable("workspaces", {
   assignedPreparer: text("assigned_preparer").notNull(),
   assignedReviewer: text("assigned_reviewer").notNull(),
   assignedPartner: text("assigned_partner").notNull(),
+  /** Set on an amendment workspace: the filed workspace it branches from and the accepted snapshot it amends. */
+  parentWorkspaceId: text("parent_workspace_id"),
+  amendsSnapshotId: text("amends_snapshot_id"),
 });
 
 export const sessions = pgTable("sessions", {
@@ -295,6 +298,10 @@ export const verifications = pgTable(
     actorId: text("actor_id").notNull(),
     createdAt: ts("created_at").notNull().defaultNow(),
     createdRevision: integer("created_revision").notNull(),
+    /** Shared id when recorded by a batch action; undo targets the batch. */
+    batchId: text("batch_id"),
+    withdrawnRevision: integer("withdrawn_revision"),
+    withdrawnBy: text("withdrawn_by"),
   },
   (t) => [index("verifications_workspace_subject_idx").on(t.workspaceId, t.subjectRef)],
 );
@@ -376,4 +383,249 @@ export const viewEvents = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("view_events_workspace_idx").on(t.workspaceId)],
+);
+
+/* ------------------------------------------------------------------------ */
+/* Judgment, completeness, people and lifecycle records.                     */
+/* ------------------------------------------------------------------------ */
+
+/** Judgment calls, elections, due diligence and penalty decisions, each with its authority. */
+export const judgments = pgTable(
+  "judgments",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    kind: text("kind").notNull(), // judgment | election | due_diligence | penalty_decision
+    subjectRef: text("subject_ref").notNull(),
+    area: text("area").notNull(),
+    title: text("title").notNull(),
+    authority: text("authority").notNull(),
+    applicability: text("applicability").notNull(),
+    conclusion: text("conclusion").notNull(),
+    consequences: text("consequences"),
+    evidenceRefs: jsonb("evidence_refs").$type<string[]>().notNull(),
+    checklist: jsonb("checklist").$type<{ item: string; done: boolean; note?: string }[]>(),
+    status: text("status").notNull(), // recorded | superseded
+    supersedesId: text("supersedes_id"),
+    decidedBy: text("decided_by").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+  },
+  (t) => [index("judgments_workspace_idx").on(t.workspaceId, t.subjectRef)],
+);
+
+/** Completeness: an explicit disposition for a document, page or tax area. */
+export const dispositions = pgTable(
+  "dispositions",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    subjectRef: text("subject_ref").notNull(), // Dxx | doc:Dxx#pageN | area:<id>
+    disposition: text("disposition").notNull(), // used | duplicate | superseded | not_applicable | outside_scope | manual_review | reviewed_no_use
+    note: text("note"),
+    actorId: text("actor_id").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+    batchId: text("batch_id"),
+    withdrawnRevision: integer("withdrawn_revision"),
+    withdrawnBy: text("withdrawn_by"),
+  },
+  (t) => [index("dispositions_workspace_idx").on(t.workspaceId, t.subjectRef)],
+);
+
+export const requests = pgTable(
+  "requests",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    kind: text("kind").notNull(), // client_question | colleague_question | document_request
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    fromActorId: text("from_actor_id").notNull(),
+    toActorId: text("to_actor_id").notNull(),
+    dueAt: ts("due_at"),
+    status: text("status").notNull(), // open | answered | resolved | withdrawn
+    refs: jsonb("refs").$type<string[]>().notNull(),
+    area: text("area").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+    businessTime: ts("business_time").notNull(),
+    resolvedBy: text("resolved_by"),
+    resolvedRevision: integer("resolved_revision"),
+    resolution: text("resolution"),
+  },
+  (t) => [index("requests_workspace_idx").on(t.workspaceId, t.status)],
+);
+
+/** A reply is evidence: it keeps who said it, when (business time) and what it was attached to. */
+export const requestReplies = pgTable(
+  "request_replies",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    requestId: text("request_id").notNull(),
+    authorId: text("author_id").notNull(),
+    body: text("body").notNull(),
+    attachmentIds: jsonb("attachment_ids").$type<string[]>().notNull(),
+    businessTime: ts("business_time").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+  },
+  (t) => [index("request_replies_request_idx").on(t.workspaceId, t.requestId)],
+);
+
+/** Attached files, messages and notes with provenance and a content hash. Small demo files are stored inline. */
+export const attachments = pgTable(
+  "attachments",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    kind: text("kind").notNull(), // file | note | message
+    filename: text("filename").notNull(),
+    contentType: text("content_type").notNull(),
+    byteLength: integer("byte_length").notNull(),
+    sha256: text("sha256").notNull(),
+    content: text("content").notNull(), // text as given, or base64 for binary
+    encoding: text("encoding").notNull(), // utf8 | base64
+    provenance: text("provenance").notNull(), // client_upload | staff_upload | reply
+    uploadedBy: text("uploaded_by").notNull(),
+    requestId: text("request_id"),
+    linkedRefs: jsonb("linked_refs").$type<string[]>().notNull(),
+    businessTime: ts("business_time").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+  },
+  (t) => [index("attachments_workspace_idx").on(t.workspaceId)],
+);
+
+export const tasks = pgTable(
+  "tasks",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    kind: text("kind").notNull(), // review | outside_filing | follow_up | planning
+    title: text("title").notNull(),
+    detail: text("detail").notNull(),
+    ownerId: text("owner_id").notNull(),
+    dueAt: ts("due_at"),
+    status: text("status").notNull(), // open | done | cancelled
+    refs: jsonb("refs").$type<string[]>().notNull(),
+    area: text("area").notNull(),
+    createdBy: text("created_by").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+    completedBy: text("completed_by"),
+    completedRevision: integer("completed_revision"),
+    completionNote: text("completion_note"),
+    completionRefs: jsonb("completion_refs").$type<string[]>(),
+  },
+  (t) => [index("tasks_workspace_idx").on(t.workspaceId, t.status)],
+);
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    recipientId: text("recipient_id").notNull(),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    refs: jsonb("refs").$type<string[]>().notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+    readAt: ts("read_at"),
+  },
+  (t) => [index("notifications_recipient_idx").on(t.workspaceId, t.recipientId)],
+);
+
+export const timeEntries = pgTable(
+  "time_entries",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    actorId: text("actor_id").notNull(),
+    area: text("area").notNull(),
+    hours: numeric("hours", { precision: 8, scale: 2 }).notNull(),
+    note: text("note"),
+    workDate: text("work_date").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+  },
+  (t) => [index("time_entries_workspace_idx").on(t.workspaceId, t.area)],
+);
+
+/** Versioned firm standards. Version 1 is the packet's starter standard. */
+export const standardsVersions = pgTable(
+  "standards_versions",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    version: integer("version").notNull(),
+    standards: jsonb("standards").$type<unknown>().notNull(),
+    note: text("note").notNull(),
+    createdBy: text("created_by").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+  },
+  (t) => [index("standards_versions_workspace_idx").on(t.workspaceId, t.version)],
+);
+
+/** A client's approval and simulated e-file signature, bound to one presentation hash. */
+export const clientApprovals = pgTable(
+  "client_approvals",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    personId: text("person_id").notNull(), // cu-01 | cu-02
+    snapshotId: text("snapshot_id").notNull(),
+    presentationHash: text("presentation_hash").notNull(),
+    status: text("status").notNull(), // approved | invalidated | withdrawn
+    simulatedSignature: boolean("simulated_signature").notNull().default(true),
+    signedAt: ts("signed_at").notNull(), // business time
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+    invalidatedRevision: integer("invalidated_revision"),
+    invalidationReason: text("invalidation_reason"),
+  },
+  (t) => [index("client_approvals_workspace_idx").on(t.workspaceId, t.status)],
+);
+
+/** Frozen presentations of the workpaper. Never updated after insert. */
+export const filingSnapshots = pgTable(
+  "filing_snapshots",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    kind: text("kind").notNull(), // client_ready | submission | accepted | carryforward
+    revision: integer("revision").notNull(),
+    contentHash: text("content_hash").notNull(),
+    payload: jsonb("payload").$type<unknown>().notNull(),
+    createdBy: text("created_by").notNull(),
+    businessTime: ts("business_time").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("filing_snapshots_workspace_idx").on(t.workspaceId, t.kind)],
+);
+
+/** Each submission attempt is immutable; a rejection leads to a new attempt. */
+export const submissions = pgTable(
+  "submissions",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    snapshotId: text("snapshot_id").notNull(),
+    jurisdiction: text("jurisdiction").notNull(), // federal | california
+    attempt: integer("attempt").notNull(),
+    submissionRef: text("submission_ref").notNull(), // simulated agency id
+    status: text("status").notNull(), // submitted | accepted | rejected | not_transmitted
+    errors: jsonb("errors").$type<{ code: string; message: string }[]>().notNull(),
+    simulated: boolean("simulated").notNull().default(true),
+    submittedAt: ts("submitted_at").notNull(), // business time
+    decidedAt: ts("decided_at"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    createdRevision: integer("created_revision").notNull(),
+    decidedRevision: integer("decided_revision"),
+  },
+  (t) => [index("submissions_workspace_idx").on(t.workspaceId, t.jurisdiction)],
 );

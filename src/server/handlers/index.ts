@@ -4,6 +4,12 @@ import "./evidence";
 import "./findings";
 import "./signoffs";
 import "./time";
+import "./judgments";
+import "./requests";
+import "./tasks";
+import "./standards";
+import "./batch";
+import "./filing";
 
 export { dispatch, envelopeSchema, registeredCommandTypes } from "../commands";
 export type { CommandEnvelope, CommandResult, AuditRow } from "../commands";

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local data, editor settings and agent worktrees are not part of the app.
+    ".data/**",
+    ".claude/**",
+    ".handoff/**",
   ]),
 ]);
 

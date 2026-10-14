@@ -10,12 +10,13 @@ import { indexPacket } from "@/packet/load";
 import { parseRef, resolveRef } from "@/packet/refs";
 import { CommandError, registerHandler, type HandlerContext } from "../commands";
 import { newId } from "../ids";
+import { missingWorkpaperRefs } from "../refs-db";
 import { loadEffective, recordContribution, scopePreparers } from "../state";
 
 const SCHC_EXPENSE = /^SchC\.(8|9|1\d|2[0-7][a-z]?(\.\d+)?|30)$/;
 
 /** Reject evidence that does not resolve or is not yet available at the replay clock. */
-export function assertEvidence(hc: HandlerContext, refs: string[]): void {
+export async function assertEvidence(hc: HandlerContext, refs: string[]): Promise<void> {
   const packet = hc.ctx.packet.packet;
   const unresolved = refs.filter((r) => {
     const parsed = parseRef(r);
@@ -30,6 +31,8 @@ export function assertEvidence(hc: HandlerContext, refs: string[]): void {
       `Not yet available at ${hc.businessTime.slice(0, 10)}: ${unavailable.map((u) => `${u.ref} (arrives ${u.availableAt?.slice(0, 10)})`).join(", ")}. Advance the replay clock to use it.`,
     );
   }
+  const missing = await missingWorkpaperRefs(hc.tx, hc.ctx.workspace.id, refs);
+  if (missing.length) throw new CommandError("validation", `These workpaper references do not exist here: ${missing.join(", ")}.`);
 }
 
 const proposeSchema = z.object({
@@ -54,7 +57,7 @@ registerHandler({
     const version = idx.versions.get(ctx.workspace.activeVersion)!;
     const line = idx.linesByVersion.get(version.version)!.get(p.targetRef);
     if (!line) throw new CommandError("not_found", `${p.targetRef} is not a line in ${version.version}.`);
-    assertEvidence(hc, p.evidenceRefs);
+    await assertEvidence(hc, p.evidenceRefs);
 
     const effective = await loadEffective(tx, ctx);
     const current = effective.lines.get(p.targetRef)!;

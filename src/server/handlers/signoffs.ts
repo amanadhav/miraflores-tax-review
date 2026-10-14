@@ -8,9 +8,10 @@ import { CommandError, registerHandler } from "../commands";
 import { newId } from "../ids";
 import { computeFingerprint } from "../invalidation";
 import { loadWorkspaceState, scopePreparers } from "../state";
+import { currentStandards } from "../standards";
 
 const signSchema = z.object({
-  scopeType: z.enum(["area", "line"]),
+  scopeType: z.enum(["area", "line", "return"]),
   scopeId: z.string().min(1),
   level: z.enum(["preparer", "reviewer", "partner"]),
   note: z.string().max(2000).optional(),
@@ -25,7 +26,10 @@ registerHandler({
     const idx = indexPacket(ctx.packet.packet);
     const lines = idx.linesByVersion.get(ctx.workspace.activeVersion)!;
     let area: string;
-    if (p.scopeType === "area") {
+    if (p.scopeType === "return") {
+      if (p.scopeId !== "*") throw new CommandError("validation", "A whole-return sign-off uses scope id *.");
+      area = "partner_review";
+    } else if (p.scopeType === "area") {
       if (!AREAS.some((a) => a.id === p.scopeId)) throw new CommandError("validation", `Unknown area ${p.scopeId}.`);
       area = p.scopeId;
     } else {
@@ -40,7 +44,8 @@ registerHandler({
       requireIndependent(ctx.actor, preparers, p.scopeType === "area" ? areaLabel(area) : p.scopeId);
     }
     const state = await loadWorkspaceState(tx, ctx);
-    const fp = computeFingerprint(state, p.scopeType, p.scopeId, lines);
+    const std = await currentStandards(tx, ctx.workspace.id, ctx.packet.packet.firm.starter_standards);
+    const fp = computeFingerprint(state, p.scopeType, p.scopeId, lines, std.id);
     // A fresh sign-off by the same person at the same level replaces the previous one; history stays.
     const existing = state.signoffs.filter(
       (s) => s.status === "active" && s.scopeType === p.scopeType && s.scopeId === p.scopeId && s.level === p.level && s.actorId === ctx.actor.id,
@@ -65,7 +70,9 @@ registerHandler({
       revision,
       note: p.note ?? null,
     });
-    const openBlockers = state.findings.filter((f) => f.status === "open" && f.blocksFiling && (p.scopeType === "area" ? f.area === area : f.refs.includes(p.scopeId)));
+    const openBlockers = state.findings.filter(
+      (f) => f.status === "open" && f.blocksFiling && (p.scopeType === "return" ? true : p.scopeType === "area" ? f.area === area : f.refs.includes(p.scopeId)),
+    );
     return {
       result: { signoffId: id, fingerprint: fp.hash, openBlockers: openBlockers.map((f) => f.id) },
       events: [
@@ -73,7 +80,7 @@ registerHandler({
           action: "signoff_recorded",
           entityType: "signoff",
           entityId: id,
-          summary: `${ctx.actor.name} signed off ${p.scopeType === "area" ? areaLabel(area) : p.scopeId} at ${p.level} level${openBlockers.length ? ` with ${openBlockers.length} open blocking finding(s)` : ""}.`,
+          summary: `${ctx.actor.name} signed off ${p.scopeType === "return" ? "the whole return" : p.scopeType === "area" ? areaLabel(area) : p.scopeId} at ${p.level} level${openBlockers.length ? ` with ${openBlockers.length} open blocking finding(s)` : ""}.`,
           after: { scopeType: p.scopeType, scopeId: p.scopeId, level: p.level, fingerprint: fp.hash },
           area,
         },

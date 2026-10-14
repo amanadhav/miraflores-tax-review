@@ -1,26 +1,13 @@
 import { z } from "zod";
 import * as t from "@/db/schema";
-import { areaForLine } from "@/domain/areas";
 import { requirePermission } from "@/domain/policy";
 import { indexPacket } from "@/packet/load";
-import { parseRef, resolveRef } from "@/packet/refs";
+import { parseRef } from "@/packet/refs";
 import { CommandError, registerHandler } from "../commands";
 import { newId } from "../ids";
 import { recordContribution } from "../state";
 import { assertEvidence } from "./adjustments";
-
-function subjectArea(hc: { ctx: { packet: { packet: import("@/packet/types").Packet }; workspace: { activeVersion: string } } }, subjectRef: string): string {
-  const parsed = parseRef(subjectRef);
-  const packet = hc.ctx.packet.packet;
-  if (parsed.kind === "line") {
-    const line = indexPacket(packet).linesByVersion.get(hc.ctx.workspace.activeVersion)?.get(parsed.key);
-    if (!line) throw new CommandError("not_found", `${subjectRef} is not a line in ${hc.ctx.workspace.activeVersion}.`);
-    return areaForLine(line.key, line.form);
-  }
-  const resolved = resolveRef(packet, subjectRef, { version: hc.ctx.workspace.activeVersion });
-  if (!resolved.found && parsed.kind !== "workpaper") throw new CommandError("not_found", `${subjectRef} does not resolve.`);
-  return "intake_and_engagement";
-}
+import { subjectArea } from "./common";
 
 const verificationSchema = z.object({
   subjectRef: z.string().min(1),
@@ -39,7 +26,7 @@ registerHandler({
     const allowed = ctx.packet.packet.firm.starter_standards.verification_types;
     if (!allowed.includes(p.method)) throw new CommandError("validation", `Verification method must be one of: ${allowed.join(", ")}.`);
     const area = subjectArea(hc, p.subjectRef);
-    assertEvidence(hc, p.evidenceRefs);
+    await assertEvidence(hc, p.evidenceRefs);
     const id = newId("ver");
     await tx.insert(t.verifications).values({
       id,
@@ -104,7 +91,7 @@ registerHandler({
     const doc = indexPacket(packet).documents.get(p.documentId);
     const page = doc?.pages.find((pg) => pg.page === p.page);
     if (!doc || !page) throw new CommandError("not_found", `${p.documentId} page ${p.page} is not in the packet.`);
-    assertEvidence(hc, [`doc:${p.documentId}#page${p.page}`]);
+    await assertEvidence(hc, [`doc:${p.documentId}#page${p.page}`]);
     const area = subjectArea(hc, p.subjectRef);
     // Exact text only: an anchor is a quotation of what is printed, never an approximation.
     let start = -1;
