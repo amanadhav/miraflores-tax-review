@@ -7,9 +7,8 @@ every change made to it, and who approved it.
 
 Hosted demo: https://miraflores-tax-review.vercel.app (start a workspace from the
 landing page; each visitor gets their own copy of the engagement). The core idea
-and data model are in [docs/one-page.md](docs/one-page.md), the packet errors and
-how the app surfaces them in [docs/errors-found.md](docs/errors-found.md), and the
-recording script in [docs/demo-walkthrough.md](docs/demo-walkthrough.md).
+and data model are in [docs/one-page.md](docs/one-page.md), and the packet errors
+and how the app surfaces them in [docs/errors-found.md](docs/errors-found.md).
 
 ## What it does
 
