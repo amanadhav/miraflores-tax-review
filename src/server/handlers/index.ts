@@ -4,6 +4,7 @@ import "./evidence";
 import "./findings";
 import "./signoffs";
 import "./time";
+import "./version";
 
 export { dispatch, envelopeSchema, registeredCommandTypes } from "../commands";
 export type { CommandEnvelope, CommandResult, AuditRow } from "../commands";
