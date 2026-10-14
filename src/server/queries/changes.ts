@@ -615,12 +615,10 @@ export async function whatIfView(ctx: SessionContext, altId: string | null, page
   const all = packet.what_if.alternatives;
   const alt = altId ? all.find((a) => a.id === altId) ?? null : null;
   const selectedId = alt?.id ?? null;
-  const [[acceptedRow]] = await Promise.all([
-    ctx.db
-      .select({ n: count() })
-      .from(t.adjustments)
-      .where(and(eq(t.adjustments.workspaceId, ctx.workspace.id), eq(t.adjustments.status, "accepted"))),
-  ]);
+  const [acceptedRow] = await ctx.db
+    .select({ n: count() })
+    .from(t.adjustments)
+    .where(and(eq(t.adjustments.workspaceId, ctx.workspace.id), eq(t.adjustments.status, "accepted")));
   const acceptedCount = Number(acceptedRow?.n ?? 0);
   const activeVersion = ctx.workspace.activeVersion;
   let combined: WhatIfView["combined"] = { available: false, reason: "Select one alternative to see its supplied result." };

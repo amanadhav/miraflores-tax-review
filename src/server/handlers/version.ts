@@ -26,18 +26,19 @@ registerHandler({
     const from = ctx.workspace.activeVersion;
     if (from === p.version) throw new CommandError("invalid_state", `${p.version} is already the baseline.`);
     const previous = indexPacket(packet).versions.get(from);
+    const asOf = new Date(ctx.workspace.asOf).toISOString();
     await tx.update(t.workspaces).set({ activeVersion: p.version }).where(eq(t.workspaces.id, ctx.workspace.id));
     // Sign-offs are re-fingerprinted after every command against the workspace
     // the handler leaves behind, so the context must already name the new version.
     hc.ctx.workspace = { ...hc.ctx.workspace, activeVersion: p.version };
     return {
-      result: { activeVersion: p.version, previousVersion: from, asOf: ctx.workspace.asOf },
+      result: { activeVersion: p.version, previousVersion: from, asOf },
       events: [
         {
           action: "version_selected",
           entityType: "workspace",
           entityId: ctx.workspace.id,
-          summary: `${ctx.actor.name} made ${p.version} (computed ${target.computed_at.slice(0, 10)}) the baseline instead of ${from}; the replay clock stays at ${new Date(ctx.workspace.asOf).toISOString().slice(0, 10)} and no adjustment was touched.`,
+          summary: `${ctx.actor.name} made ${p.version} (computed ${target.computed_at.slice(0, 10)}) the baseline instead of ${from}; the replay clock stays at ${asOf.slice(0, 10)} and no adjustment was touched.`,
           before: { activeVersion: from, computedAt: previous?.computed_at ?? null },
           after: { activeVersion: p.version, computedAt: target.computed_at, trigger: target.trigger },
         },
