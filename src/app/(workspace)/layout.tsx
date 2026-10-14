@@ -5,18 +5,22 @@ import { requireSessionContext } from "@/server/request";
 import { LiveRefresh } from "@/components/live-refresh";
 import { RoleSwitcher } from "@/components/role-switcher";
 import { SearchBox } from "@/components/search-box";
+import { NotificationBadge } from "@/components/notification-badge";
+import { unreadCount } from "@/server/queries/people";
 
 const NAV = [
   { href: "/overview", label: "Overview" },
   { href: "/review", label: "Review" },
   { href: "/evidence", label: "Evidence" },
   { href: "/changes", label: "Changes" },
+  { href: "/people", label: "People" },
   { href: "/filing", label: "Filing" },
   { href: "/firm", label: "Firm" },
 ];
 
 export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireSessionContext();
+  const unread = ctx.actor.role === "client" ? 0 : await unreadCount(ctx);
   const personas = actorsFromPacket(ctx.packet.packet).map((a) => ({
     id: a.id,
     name: a.name,
@@ -35,6 +39,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
             {NAV.map((n) => (
               <Link key={n.href} href={n.href} className="text-stone-600 hover:text-stone-900">
                 {n.label}
+                {n.href === "/people" && unread > 0 ? <NotificationBadge count={unread} /> : null}
               </Link>
             ))}
           </nav>
