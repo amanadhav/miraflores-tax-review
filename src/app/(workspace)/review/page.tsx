@@ -83,9 +83,28 @@ export default async function ReviewPage({
             );
           })}
         </nav>
-        <Link href="/review/assets" className="block px-3 py-1 text-xs text-blue-700 hover:underline">
-          Depreciation by asset
-        </Link>
+        <div className="mt-3 border-t border-stone-200 pt-2">
+          <div className="px-3 py-1 text-xs font-medium text-stone-500">Records</div>
+          {[
+            ["/review/summary", "Return summary vs last year"],
+            ["/review/variance", "Prior-year variance"],
+            ["/review/bridge", "Books to tax"],
+            ["/review/sales", "Sales detail"],
+            ["/review/rentals", "Rentals and passive losses"],
+            ["/review/passthroughs", "K-1s and basis by year"],
+            ["/review/retirement-foreign", "Retirement and foreign"],
+            ["/review/deductions-credits", "Deductions and credits"],
+            ["/review/payments", "Payments"],
+            ["/review/california", "State split"],
+            ["/review/carryovers", "Carryovers and prior preparer"],
+            ["/review/assets", "Depreciation by asset"],
+            ["/review/judgments", "Judgments and elections"],
+          ].map(([href, label]) => (
+            <Link key={href} href={href} className="block px-3 py-1 text-xs text-blue-700 hover:underline">
+              {label}
+            </Link>
+          ))}
+        </div>
       </aside>
 
       <div className="min-w-0 space-y-6">

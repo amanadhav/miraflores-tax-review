@@ -51,6 +51,10 @@ export default async function EvidenceIndexPage({ searchParams }: { searchParams
           <Link href="/evidence/records" className="text-blue-700 hover:underline">
             Prior years, agency and household records
           </Link>
+          <span className="mx-2 text-stone-300">|</span>
+          <Link href="/evidence/completeness" className="text-blue-700 hover:underline">
+            Completeness
+          </Link>
         </nav>
       </section>
 
