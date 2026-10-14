@@ -110,7 +110,7 @@ export default async function OverviewPage() {
                 <td className="num px-2 py-2">{a.lines}</td>
                 <td className="num px-2 py-2">
                   {a.openFindings}
-                  {a.blockers ? <span className="ml-1 text-xs text-red-600">{a.blockers} block</span> : null}
+                  {a.blockers ? <span className="ml-1 text-xs text-red-600">({a.blockers} block filing)</span> : null}
                 </td>
                 <td className="num px-2 py-2">{a.proposals}</td>
                 <td className="num px-2 py-2">{a.accepted}</td>
