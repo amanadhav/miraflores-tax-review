@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AmendForm, NextYearForm, OutcomeForm, PresentForm, SubmitPanel } from "@/components/filing-actions";
+import { CommandButton } from "@/components/command-client";
 import { RefLink } from "@/components/ref-link";
 import { dateOnly, dateTime, money } from "@/lib/format";
 import { requireSessionContext } from "@/server/request";
@@ -182,6 +183,23 @@ export default async function FilingPage() {
         </p>
         {!anyAction ? <p className="mt-3 text-sm text-stone-600">No action is available in this state.</p> : null}
         <div className="mt-3 grid gap-4 lg:grid-cols-2">
+          {!v.banner.frozen && (v.banner.state === "preparing" || v.banner.state === "rejected" || v.banner.state === "amending") ? (
+            <div className="rounded border border-stone-200 bg-stone-50 p-4">
+              <h3 className="text-sm font-medium">Whole-return sign-off</h3>
+              <p className="mt-1 text-xs text-stone-500">
+                Required before presenting: a reviewer and a partner each sign off the whole return. The sign-off is fingerprinted over every line, the evidence, the open
+                findings and the firm standard, and reopens if any of them changes. No one can sign off work they prepared.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <CommandButton revision={rev} type="sign_off" payload={{ scopeType: "return", scopeId: "*", level: "reviewer" }} className="rounded bg-stone-900 px-3 py-1.5 text-sm text-white hover:bg-stone-700 disabled:opacity-50">
+                  Sign off whole return as reviewer
+                </CommandButton>
+                <CommandButton revision={rev} type="sign_off" payload={{ scopeType: "return", scopeId: "*", level: "partner" }} className="rounded border border-stone-900 px-3 py-1.5 text-sm hover:bg-stone-100 disabled:opacity-50">
+                  Sign off whole return as partner
+                </CommandButton>
+              </div>
+            </div>
+          ) : null}
           {v.actions.present.available ? <PresentForm revision={rev} gate={v.actions.present} /> : null}
           {v.actions.submit.available ? <SubmitPanel revision={rev} gate={v.actions.submit} /> : null}
           {v.actions.outcome.available ? awaiting.map((s) => <OutcomeForm key={s.id} revision={rev} submission={s} gate={v.actions.outcome} />) : null}
